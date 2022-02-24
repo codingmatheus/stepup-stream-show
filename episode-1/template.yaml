@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: An AWS Serverless Specification template describing your function.
+Resources:
+  MovieWatchFinderService:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: code/functions/moviewatchfinderservice/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Description: 'Searches a movie title and returns all platforms where it''s available to watch'
+      MemorySize: 128
+      Timeout: 3
+      
+  MovieWatchFinderWorkflow:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: code/statemachines/moviewatchfinder.asl.json
+      DefinitionSubstitutions:
+        MovieWatchFinderServiceArn: !GetAtt MovieWatchFinderService.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref MovieWatchFinderService
+  
+
+

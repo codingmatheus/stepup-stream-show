@@ -1,0 +1,28 @@
+{
+    "Comment": "Movie Watch Finder workflow",
+    "StartAt": "Get Movie Platforms",
+    "States": {
+      "Get Movie Platforms": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::aws-sdk:lambda:invoke",
+        "OutputPath": "$.Payload",
+        "Parameters": {
+          "Payload.$": "$",
+          "FunctionName": "${MovieWatchFinderServiceArn}"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "End": true
+      }
+    }
+  }
