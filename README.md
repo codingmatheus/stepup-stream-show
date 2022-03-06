@@ -1,8 +1,12 @@
 # Step Up!
 
 Code samples and demos as featured on the Step Up! show on the official AWS Twitch channel at https://twitch.tv/aws
+## Notes
 
-## Step Up! - Episodes
+- All SAM templates will have a samconfig.toml file containing defaults for the SAM build and deployment. Feel free to update those parameters to your convenience, however, do not change the stack name as it may be used by other scripts and could break the build and deploy process.
+
+- **All stacks will deploy by defaul to the eu-west-1 (Ireland) region.** You can easily change that in the samconfig.toml file included or, if you are executing the SAM commands yourself, you can use ```sam deploy --guided``` to override it.
+## Episodes
 
 ### Episode 1 - Getting started with AWS Step Functions
 - ![#f03c15](https://via.placeholder.com/15/f03c15/000000?text=+)  **Build requirements**
