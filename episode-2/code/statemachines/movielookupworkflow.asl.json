@@ -1,0 +1,36 @@
+{
+    "Comment": "Movie Look-Up Workflow",
+    "StartAt": "Get Movie",
+    "States": {
+        "Get Movie": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:dynamodb:getItem",
+            "Parameters": {
+                "TableName": "${SFNDemoDynamoDBLargeItemName}",
+                "Key.$": "$" 
+            },
+            "Catch": [
+                {
+                    "ErrorEquals": [
+                        "States.DataLimitExceeded"
+                    ]
+                    ,
+                    "Next": "Queue Large Item For Processing",
+                    "ResultPath": "$.error"
+                }
+            ]
+            ,
+            "End": true
+        },
+        "Queue Large Item For Processing": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sqs:sendMessage",
+            "Parameters": {
+                "MessageBody.$": "$",
+                "QueueUrl": "${MovieLookUpQueueUrl}"
+            },
+            "End": true
+        }
+        
+    }
+}

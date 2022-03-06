@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Step Up! - Episode 2 - Handling Incompability of Data Size Limits Between AWS Step Functions and Amazon DynamoDB.
+
+Resources:
+  MovieLookUpWorkflow:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: code/statemachines/movielookupworkflow.asl.json
+      DefinitionSubstitutions:
+        MovieLookUpQueueUrl: !Ref MovieLookUpQueue
+        SFNDemoDynamoDBLargeItemName: !Ref SFNDemoDynamoDBLargeItem
+      Policies:
+        - SQSPollerPolicy:
+            QueueName:
+              !GetAtt MovieLookUpQueue.QueueName
+
+  MovieLookUpQueue:
+    Type: AWS::SQS::Queue
+
+  SFNDemoDynamoDBLargeItem:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
