@@ -1,0 +1,84 @@
+{
+    "Comment": "Workflow that processes stored movie scripts and saves their details to a database",
+    "StartAt": "Set Global Variables",
+    "States": {
+        "Set Global Variables": {
+            "Type": "Pass",
+            "Parameters": {
+                "Bucket.$": "$.Bucket",
+                "MaxKeys": 500
+            },
+            "Next": "Get Movie Scripts"
+        },
+        "Get Movie Scripts": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:s3:listObjectsV2",
+            "Parameters": {
+                "Bucket": "${MovieScriptsBucketName}",
+                "MaxKeys.$": "$.MaxKeys"
+            },
+            "ResultPath": "$.result",
+            "Next": "Save Movie Scripts"
+        },
+        "Save Movie Scripts": {
+            "Type": "Map",
+            "ItemsPath": "$.result.Contents",
+            "Iterator": {
+                "StartAt": "Save Movie Script",
+                "States": {
+                    "Save Movie Script": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:states:::lambda:invoke",
+                        "Parameters": {
+                            "FunctionName": "${MovieScriptFunctionName}",
+                            "Payload": {"MovieDataPath.$": "$.Key"}  
+                        },
+                        "OutputPath": "$.Payload",
+                        "Retry": [
+                            {
+                                "ErrorEquals": [
+                                    "Lambda.ServiceException",
+                                    "Lambda.AWSLambdaException",
+                                    "Lambda.SdkClientException"
+                                ],
+                                "IntervalSeconds": 2,
+                                "MaxAttempts": 6,
+                                "BackoffRate": 2
+                            }
+                        ],
+                        "End": true
+                    }
+                }
+            },
+            "ResultPath": null,
+            "Next": "More Movie Scripts?"
+        },
+        "More Movie Scripts?": {
+            "Type": "Choice",
+            "Choices": [
+                {
+                    "Variable": "$.result.IsTruncated",
+                    "BooleanEquals": true,
+                    "Next": "Get Remaining Movie Scripts"
+                }
+            ],
+            "Default": "Done"
+        },
+        "Get Remaining Movie Scripts": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::aws-sdk:s3:listObjectsV2",
+            "Parameters": {
+                "Bucket.$": "$.Bucket",
+                "MaxKeys.$": "$.MaxKeys",
+                "ContinuationToken.$": "$.result.NextContinuationToken"
+            },
+            "ResultPath": "$.result",
+            "Next": "Save Movie Scripts"
+        },
+        "Done": {
+            "Type": "Pass",
+            "End": true
+        }
+    }
+
+}

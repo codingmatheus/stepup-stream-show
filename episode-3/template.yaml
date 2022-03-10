@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Step Up! - Episode 3 - Handling Amazon S3 pagination with AWS Step Functions
+
+Resources:
+  MovieScriptProcessorPageByPageWorkflow:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: code/statemachines/moviescriptprocessor-pagebypage.asl.json
+      DefinitionSubstitutions:
+        MovieScriptsBucketName: !Ref MovieScriptsBucket
+        MovieScriptFunctionName: !Ref MovieScriptService
+      Policies:
+        - S3ReadPolicy:
+            BucketName:
+              !Ref MovieScriptsBucket
+        - S3WritePolicy:
+            BucketName: 
+              !Ref MovieScriptsBucket
+        - LambdaInvokePolicy:
+            FunctionName: 
+              !Ref MovieScriptService
+
+  MovieScriptsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "sfndemo-moviescripts"
+
+  MovieScriptsDatabase:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey: {"Name": "id", "Type": "String"}
+      TableName: "SFNDemo-MovieScripts"
+
+  MovieScriptService:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "MovieScriptService"
+      Handler: "moviescriptservice.handler"
+      Runtime: "nodejs14.x"
+      CodeUri: "code/functions"
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MovieScriptsDatabase
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MovieScriptsDatabase
