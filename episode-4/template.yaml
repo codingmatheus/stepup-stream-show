@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Step Up! - Episode 3 - Handling Amazon S3 pagination with AWS Step Functions
+
+Globals:
+  Function:
+    Timeout: 60
+    Environment:
+      Variables:
+        RUDE_WORDS: "balderdash,fiddlesticks, son of a monkey, fudge nuggets, shnookerdookies"
+
+Resources:
+  #Workflows
+  ScreenplaysProcessorWorkflow:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: code/statemachines/screenplaysprocessor.asl.json
+      DefinitionSubstitutions:
+        ScreenplaysBucketName: !Ref ScreenplaysBucket
+      Policies:
+        - DynamoDBCrudPolicy: 
+            TableName: 
+              !Ref ScreenplaysDatabase
+        - S3ReadPolicy:
+            BucketName: !Ref ScreenplaysUploadBucket
+        - S3WritePolicy:
+            BucketName: !Ref ScreenplaysBucket
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CensorshipRatingService
+        - SQSPollerPolicy:
+            QueueName:
+              !GetAtt CensoredScreenplayGeneratorQueue.QueueName
+        - SNSCrudPolicy:
+            TopicName: !Ref Rated18CensoredScreenplayGenerated
+
+  #Buckets
+  ScreenplaysUploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "sfndemo-screenplays-upload"
+
+  ScreenplaysBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "sfndemo-screenplays"
+
+  #Databases
+  ScreenplaysDatabase:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey: {"Name": "id", "Type": "String"}
+      TableName: "SFNDemo-Screenplays"
+
+  #Events
+  CensoredScreenplayGeneratorQueue:
+    Type: AWS::SQS::Queue
+
+  Rated18CensoredScreenplayGenerated:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: "Rated18CensoredScreenplayGenerated"
+      TopicName: "Rated18CensoredScreenplayGenerated"
+      FifoTopic: false
+
+  #Functions
+  CensorshipRatingService:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "CensorshipRatingService"
+      Runtime: "python3.9"
+      CodeUri: "code/functions"
+      Handler: "censorship_rating_service.lambda_handler"
+      Policies:
+        - S3ReadPolicy:
+            BucketName:
+              !Ref ScreenplaysUploadBucket
+
+  ScreenplayService:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "ScreenplayService"
+      Runtime: "nodejs14.x"
+      CodeUri: "code/functions"
+      Handler: "screenplay_service.handler"
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ScreenplaysDatabase
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName:
+              !Ref ScreenplaysDatabase
+
+
+  CensoredScreenplayGeneratorService:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CensoredScreenplayGeneratorService
+      Runtime: "python3.9"
+      Timeout: 600
+      MemorySize: 500
+      Tracing: Active
+      CodeUri: "code/functions"
+      Handler: censored_screenplay_generator_service.lambda_handler
+      Events:
+        CensoredScreenplayGeneratorRequest:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt CensoredScreenplayGeneratorQueue.Arn
+            BatchSize: 1
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ScreenplaysDatabase
+          SCREENPLAYS_UPLOAD_BUCKET: !Ref ScreenplaysUploadBucket
+          SCREENPLAYS_BUCKET: !Ref ScreenplaysBucket
+      Policies:
+        - SQSPollerPolicy:
+            QueueName:
+              !GetAtt CensoredScreenplayGeneratorQueue.QueueName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ScreenplaysDatabase
+        - S3CrudPolicy:
+            BucketName: !Ref ScreenplaysUploadBucket
+        - S3CrudPolicy:
+            BucketName: !Ref ScreenplaysBucket
+        - StepFunctionsExecutionPolicy:
+            StateMachineName: !Ref ScreenplaysProcessorWorkflow
+
+  ScreenplayApprovalService:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ScreenplayApprovalService
+      Runtime: "python3.9"
+      Tracing: Active
+      CodeUri: "code/functions"
+      Handler: screenplay_approval_service.lambda_handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ScreenplaysDatabase
+      Policies:
+        - AWSStepFunctionsFullAccess
+        - SNSCrudPolicy:
+            TopicName: !Ref Rated18CensoredScreenplayGenerated
+  
+

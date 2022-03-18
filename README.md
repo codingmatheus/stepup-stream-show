@@ -54,7 +54,7 @@ Code samples and demos as featured on the Step Up! show on the official AWS Twit
     - powershell script with the same purpose as the bash script meant for powershell users
 
 - ![#c5f015](https://via.placeholder.com/15/c5f015/000000?text=+) **Instructions**
-    - navigate to the episode-2 folder after cloning
+    - navigate to the episode-3 folder after cloning
     - run the make file:
         - if you're using Linux, macOS or WSL then run ```bash ./make.sh```
         - if you're using Powershell then run ```./make.ps1```

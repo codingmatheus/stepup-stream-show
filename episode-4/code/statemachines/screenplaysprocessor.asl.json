@@ -1,0 +1,10 @@
+{
+    "Comment": "Processes newly uploaded movie screenplays",
+    "StartAt": "Set Variables",
+    "States": {
+        "Set Variables": {
+            "Type": "Pass",
+            "End": true
+        }
+    }
+}
