@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "stepup-ep1-gettingstartedwithstepfunctions"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1sk4bd86ledya"
+s3_prefix = "stepup-ep1-gettingstartedwithstepfunctions"
+region = "eu-west-1"
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

@@ -8,6 +8,3 @@ sam build | grep "Failed" &> /dev/null
 if [ $? == 1 ]; then
     sam deploy
 fi
-
-table_details=$(aws cloudformation describe-stack-resource --stack-name sfndemo-dynamodb-largeitem --logical-resource-id SFNDemoDynamoDBLargeItem)
-python3 ./seed/populate_database.py "$table_details"
