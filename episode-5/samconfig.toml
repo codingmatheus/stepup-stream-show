@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "sfndemo-steup-episode5-expressworkflows"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1rte9osju1atp"
+s3_prefix = "sfndemo-steup-episode5-expressworkflows"
+region = "eu-west-1"
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

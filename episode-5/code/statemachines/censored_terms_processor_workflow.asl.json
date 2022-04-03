@@ -1,0 +1,10 @@
+{
+    "Comment": "Generates a censored version of an original screenplay",
+    "StartAt": "Set Variables",
+    "States": {
+        "Set Variables": {
+            "Type": "Pass",
+            "End": true
+        }
+    }
+}

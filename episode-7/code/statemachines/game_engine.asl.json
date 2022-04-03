@@ -1,0 +1,10 @@
+{
+    "Comment": "Game engine that powers the text adventure game ${GameTitle}",
+    "StartAt": "State1",
+    "States": {
+        "State1": {
+            "Type": "Pass",
+            "End": true
+        }
+    }
+}

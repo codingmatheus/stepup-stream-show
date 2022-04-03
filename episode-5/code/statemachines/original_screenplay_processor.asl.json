@@ -1,0 +1,45 @@
+{
+    "Comment": "A workflow that saves new uploaded screenplays as well as perform censorship rating and generate a censored screenplay version.",
+    "StartAt": "Set Variables",
+    "States": {
+        "Set Variables": {
+            "Type": "Pass",
+            "Parameters": {
+                "UploadBucket": "${ScreenplaysUploadBucket}",
+                "ScreenplaysBucket": "${ScreenplaysBucket}",
+                "ScreenplaysDatabase": "${ScreenplaysDatabase}"
+            },
+            "Next": "Evaluate Censorship Rating"
+        },
+        "Evaluate Censorship Rating": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${CensorshipRatingServiceName}",
+                "Payload": {
+                    "Bucket.$": "$.ScreenplaysUploadBucket",
+                    "ScreenplayObjectKey.$": "$.Key"
+                }
+            },
+            "Retry": [
+                {
+                    "ErrorEquals": [
+                        "Lambda.ServiceException",
+                        "Lambda.AWSLambdaException",
+                        "Lambda.SdkClientException"
+                    ],
+                    "IntervalSeconds": 2,
+                    "MaxAttempts": 6,
+                    "BackoffRate": 2
+                }
+            ],
+            "ResultPath": "$.censorshipRating",
+            "ResultSelector": {
+                "IsCensored.$": "$.Payload.IsCensored",
+                "Rating.$": "$.Payload.Rating"
+            },
+            "End": true
+        }
+    }
+
+}

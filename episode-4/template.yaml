@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
-Description: Step Up! - Episode 3 - Handling Amazon S3 pagination with AWS Step Functions
+Description: Step Up! - Episode 4 - Who paused my AWS Step Function?
 
 Globals:
   Function:

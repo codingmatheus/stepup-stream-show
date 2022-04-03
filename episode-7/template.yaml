@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: Step Up! - Episode 7 - Build a Text Adventure Game with AWS Step Functions
+
+Resources:
+  #State Machines
+  GameEngine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: code/statemachines/game_engine.asl.json
+      DefinitionSubstitutions:
+        GameTitle: "Stranded"
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GameState
+
+  #Functions
+  GameEngineProxy:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "GameEngineProxy"
+      Runtime: "python3.9"
+      Timeout: 60
+      Tracing: Active
+      CodeUri: "code/functions"
+      Handler: "game_engine_proxy.lambda_handler"
+      Environment:
+        Variables:
+          GAME_ENGINE_ARN: !GetAtt GameEngine.Arn
+      Policies:
+        - Statement:
+          - Sid: AWSStepFunctionsAccess
+            Effect: Allow
+            Action:
+            - states:*
+            Resource: "*"
+
+  #Databases
+  GameState:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: GameState
+      PrimaryKey: {"Name": "id", "Type": "String"}
+
+

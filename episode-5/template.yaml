@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Step Up! - Episode 5 - Express Workflows 
+
+Resources:
+  #=== Roles
+  # CensoredTermsApiRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service:
+  #             - apigateway.amazonaws.com
+  #           Action:
+  #           - sts:AssumeRole
+  #     Policies:
+  #     - PolicyName: AllowSFNExec
+  #       PolicyDocument:
+  #         Version: 2012-10-17
+  #         Statement:
+  #           - Effect: Allow
+  #             Action: "states:StartSyncExecution"
+  #             Resource: !GetAtt CensoredTermsUpdateWorkflow.Arn
+
+  #=== Workflows
+  OriginalScreenplayProcessor:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Type: STANDARD
+      DefinitionUri: code/statemachines/original_screenplay_processor.asl.json
+      DefinitionSubstitutions:
+        ScreenplaysUploadBucket: !Ref ScreenplaysUploadBucket
+        ScreenplaysBucket: !Ref ScreenplaysBucket
+        ScreenplaysDatabase: !Ref ScreenplaysDatabase
+        CensorshipRatingServiceName: !Ref CensorshipRatingService
+      Tracing:
+        Enabled: true
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ScreenplaysDatabase
+
+  CensoredTermsProcessorWorkflow:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Type: EXPRESS
+      DefinitionUri: code/statemachines/censored_terms_processor_workflow.asl.json
+      Tracing: 
+        Enabled: true
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref CensoredTermsDatabase
+  
+  #=== Functions
+  CensorshipRatingService:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "sfndemo-stepup-episode5-censorshipservice"
+      Handler: "censorship_rating_service.lambda_handler"
+      Runtime: "python3.9"
+      CodeUri: "code/functions"
+      Environment:
+        Variables:
+          SCREENPLAYS_TABLE: !Ref ScreenplaysDatabase
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref CensoredTermsDatabase
+
+  #=== Databases
+  ScreenplaysDatabase:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: SFNDemo-StepUp-Episode5-Screenplays
+
+  CensoredTermsDatabase:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: SFNDemo-StepUp-Episode5-CensoredTerms
+
+  CensoredScreenplayActivity:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: SFNDemo-StepUp-Episode5-CensoredScreenplayActivity
+
+  #=== Buckets
+  ScreenplaysUploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: sfndemo-stepup-episode5-screenplaysuploadbucket
+
+  ScreenplaysBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: sfndemo-stepup-episode5-screenplays
+
+  #=== Events
+  # NewScreenPlayAvailableRule:
+  #   Type: AWS::Events::Rule
+  #   Properties:
+  #     EventBusName: "default"
+  #     Name: "NewScreenplayAvailable"
+  #     Description: A new original screenplay has been uploaded into the system
+  #     EventPattern:
+  #       - source: '["aws.s3"]'
+  #       - detail-type: '["Object-Created"]'
+  #       - detail: 
+  #           bucket: 
+  #             name: !Ref ScreenplaysUploadBucket
+  #     Targets:
+  #       - Arn:
+  #           !GetAtt OriginalScreenplayProcessor.Arn
+  #         Id: "OriginalScreenplayProcessor"
+
+
+
