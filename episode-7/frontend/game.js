@@ -22,14 +22,15 @@ let state = {}
 async function startGame() {
     state = {}
 
-    const cmd = new InvokeCommand({FunctionName: "GameEngineProxy"})
+    const cmd = new InvokeCommand({FunctionName: "GameEngineInputProxy"})
     const response = await lambdaClient.send(cmd)
     const payload = asciiDecoder.decode(response.Payload)
     const gameScene = JSON.parse(payload)
-    const text = gameScene.text
+    const text = gameScene.Text
+    const options = JSON.parse(gameScene.Options)
 
     loadText(text)
-    loadOptions(gameScene.options)
+    loadOptions(options)
 }
 
 function clearOptions()
