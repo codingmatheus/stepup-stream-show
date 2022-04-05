@@ -83,3 +83,12 @@ Code samples and demos as featured on the Step Up! show on the official AWS Twit
     - run the make file:
         - if you're using Linux, macOS or WSL then run ```bash ./make.sh```
         - if you're using Powershell then run ```./make.ps1```
+
+### Episode 5 - Who paused my AWS Step Function?
+## coming soon
+
+### Episode 6 - Enhancing Service Integrations with AWS Step Functions and Amazon AppFlow
+### coming soon
+
+### Episode 7 - Building a Text Adventure Game With AWS Step Functions
+## coming soon

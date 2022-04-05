@@ -1,102 +1,168 @@
 {
-    "Comment": "Game engine that powers the text adventure game Stranded",
-    "StartAt": "Sitting at the Cafe",
-    "States": {
-      "Sitting at the Cafe": {
-        "Type": "Pass",
-        "Next": "Save Game State",
-        "Result": {
-          "text": "You are sitting at a cafe with a nice and warm cup of coffee. Suddenly a woman rushes in. She's screaming and crying in a state of panick. A policeman who was standing by the counter ordering some cakes rushes to the door with a pointed gun, but his arm loses tension and is quickly lowered as the cop steps outside as he looks on in disbelief.",
-          "options": [
-            {
-              "id": "talk_to_woman",
-              "text": "Talk to the crying woman."
-            },
-            {
-              "id": "follow_cop_outside",
-              "text": "Follow the cop outside."
-            }
-          ]
-        }
-      },
-      "Save Game State": {
-        "Type": "Task",
-        "Resource": "arn:aws:states:::aws-sdk:dynamodb:putItem.waitForTaskToken",
-        "Parameters": {
-          "TableName": "GameState",
-          "Item": {
-            "id": {
-              "S": "guimathed"
-            },
-            "text": {
-              "S.$": "$.text"
-            },
-            "options": {
-              "S.$": "$.options"
-            },
-            "TaskToken": {
-              "S.$": "$$.Task.Token"
-            }
-          }
-        },
-        "Next": "Choice"
-      },
-      "Choice": {
-        "Type": "Choice",
-        "Choices": [
+  "Comment": "Game engine that powers the text adventure game Stranded",
+  "StartAt": "Sitting at the Cafe",
+  "States": {
+    "Sitting at the Cafe": {
+      "Type": "Pass",
+      "Next": "Save Game State",
+      "Result": {
+        "text": "You are sitting at a cafe with a nice and warm cup of coffee. Suddenly a woman rushes in. She's screaming and crying in a state of panic. A policeman who was standing by the counter ordering some cakes rushes to the door with a pointed gun, but his arm loses tension and is quickly lowered as the cop steps outside as he looks on in disbelief.",
+        "options": [
           {
-            "And": [
-              {
-                "Variable": "$.choice",
-                "IsPresent": true
-              },
-              {
-                "Variable": "$.choice",
-                "StringMatches": "talk_to_woman"
-              }
-            ],
-            "Next": "Talk to Woman"
+            "id": "talk_to_woman",
+            "text": "Talk to the crying woman."
           },
           {
-            "And": [
-              {
-                "Variable": "$.choice",
-                "IsPresent": true
-              },
-              {
-                "Variable": "$.choice",
-                "StringMatches": "follow_cop_outside"
-              }
-            ],
-            "Next": "Follow Cop Outside"
+            "id": "follow_cop_outside",
+            "text": "Follow the cop outside."
           }
-        ],
-        "Default": "End"
+        ]
       },
-      "Talk to Woman": {
-        "Type": "Pass",
-        "Next": "Save Game State",
-        "Result": {
-          "text": " You approached the crying woman and tap her on the shoulder. She turns to you with half a muffled scream, but her gaze quickly turns towards the door. She points out with trembling fingers as time seems to freeze and everyone around them listens to her gargled words: THEY'RE HERE!",
-          "options": [
-            {
-              "id": "go_outside",
-              "text": "Go outside."
-            },
-            {
-              "id": "slap_woman",
-              "text": "Slap the crying woman."
-            }
-          ]
+      "ResultPath": "$.data"
+    },
+    "Save Game State": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:dynamodb:putItem.waitForTaskToken",
+      "Parameters": {
+        "TableName": "${GameStateTableName}",
+        "Item": {
+          "username": {
+            "S.$": "$.username"
+          },
+          "gameId": {
+            "S.$": "$.gameId"
+          },
+          "turnId": {
+            "S.$": "$.turnId"
+          },
+          "turnPlayedDate": {
+            "S.$": "$.turnPlayedDate"
+          },
+          "text": {
+            "S.$": "$.data.text"
+          },
+          "options": {
+            "S.$": "$.data.options"
+          },
+          "taskToken": {
+            "S.$": "$$.Task.Token"
+          }
         }
       },
-      "End": {
-        "Type": "Pass",
-        "End": true
+      "Next": "Choice"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.choice",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.choice.id",
+              "StringMatches": "talk_to_woman"
+            }
+          ],
+          "Next": "Talk to Woman"
+        },
+        {
+          "And": [
+            {
+              "Variable": "$.choice",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.choice.id",
+              "StringMatches": "follow_cop_outside"
+            }
+          ],
+          "Next": "Follow Cop Outside"
+        },
+        {
+          "And": [
+            {
+              "Variable": "$.choice",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.choice.id",
+              "StringMatches": "talk_to_cop"
+            }
+          ],
+          "Next": "Talk to the Cop"
+        }
+      ],
+    
+      "Default": "End"
+    },
+    "Talk to Woman": {
+      "Type": "Pass",
+      "Next": "Save Game State",
+      "Result": {
+        "text": " You approached the crying woman and tap her on the shoulder. She turns to you with half a muffled scream, but her gaze quickly turns towards the door. She points out with trembling fingers as time seems to freeze and everyone around them listens to her gargled words: THEY'RE HERE!",
+        "options": [
+          {
+            "id": "go_outside",
+            "text": "Go outside."
+          },
+          {
+            "id": "slap_woman",
+            "text": "Slap the crying woman."
+          }
+        ],
+        "actions": [
+          {
+            "status": {
+              "action": "add",
+              "type": "kindness",
+              "amount": "1"
+            }
+          }
+        ]
       },
-      "Follow Cop Outside": {
-        "Type": "Pass",
-        "Next": "Save Game State"
-      }
+      "ResultPath": "$.data"
+    },
+    "End": {
+      "Type": "Pass",
+      "End": true
+    },
+    "Follow Cop Outside": {
+      "Type": "Pass",
+      "Next": "Save Game State",
+      "Result": {
+        "text": "You rush out boldy following closely behind the cop who fades his walk out slowly to a sudden halt as his arms lose all strength and invonluntarily drop the gun that he was holding on the floor. The streets are pitch black even though it's lunch time. You look above and notice a gigantic spaceship hovering above the island, blocking it from the sun coast to coast.",
+        "options": [
+          {
+            "id": "talk_to_cop",
+            "text": "Talk to the cop."
+          },
+          {
+            "id": "run_back_inside",
+            "text": "Run back inside."
+          }
+        ]
+      },
+      "ResultPath": "$.data"
+    },
+    "Talk to the Cop": {
+      "Type": "Pass",
+      "Next": "Save Game State",
+      "Result": {
+        "text": "You cuss loudly, but there is no reaction from the cop. He is petrified in fear. You notice the faint glimmer of the gun he has dropped on the floor.",
+        "options": [
+          {
+            "id": "pick_up_gun",
+            "text": "Pick up the gun."
+          },
+          {
+            "id": "run_back_inside",
+            "text": "Run back inside."
+          }
+        ]
+      },
+      "ResultPath": "$.data"
     }
   }
+}

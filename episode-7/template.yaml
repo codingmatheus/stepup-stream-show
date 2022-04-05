@@ -15,18 +15,19 @@ Resources:
       DefinitionUri: code/statemachines/game_engine.asl.json
       DefinitionSubstitutions:
         GameTitle: "Stranded"
+        GameStateTableName: !Ref GameStateDB
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref GameStateDB
 
   #Functions
-  GameEngineInputProxy:
+  GameEngineProxy:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: "GameEngineInputProxy"
+      FunctionName: "GameEngineProxy"
       Runtime: "python3.9"
-      CodeUri: "code/functions/game_engine_input_proxy"
-      Handler: "game_engine_input_proxy.lambda_handler"
+      CodeUri: "code/functions/game_engine_proxy"
+      Handler: "game_engine_proxy.lambda_handler"
       Environment:
         Variables:
           GAME_ENGINE_ARN: !GetAtt GameEngine.Arn
@@ -43,9 +44,25 @@ Resources:
 
   #Databases
   GameStateDB:
-    Type: AWS::Serverless::SimpleTable
+    Type: AWS::DynamoDB::Table
     Properties:
-      TableName: GameState
-      PrimaryKey: {"Name": "id", "Type": "String"}
+      TableName: StepUp-Episode7-GameState
+      AttributeDefinitions:
+        - 
+          AttributeName: "username"
+          AttributeType: "S"
+        - 
+          AttributeName: "gameId"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "username"
+          KeyType: "HASH"
+        - 
+          AttributeName: "gameId"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
 
 

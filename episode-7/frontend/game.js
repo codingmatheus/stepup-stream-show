@@ -17,20 +17,50 @@ const textElement = document.getElementById("text")
 const optionButtonsElement = document.getElementById("option-buttons")
 const asciiDecoder = new TextDecoder("ascii")
 
-let state = {}
+let username = ""
+let taskToken = ""
+let gameId = ""
 
-async function startGame() {
-    state = {}
+document.addEventListener("DOMContentLoaded", (event) => {
+    document.getElementById("gameCanvas").style.display = "none"
+    document.getElementById("startButton").addEventListener("click", loadGame, false)
+})
 
-    const cmd = new InvokeCommand({FunctionName: "GameEngineInputProxy"})
+function loadGame() {
+
+    const loginElement = document.getElementById("loginPanel")
+    const gameElement = document.getElementById("gameCanvas")
+    const usernameElement = document.getElementById("username")
+
+    username = usernameElement.value
+    loginElement.style.display = "none"
+    gameElement.style.display = "block"
+
+    loadNextScreen("")
+}
+
+async function loadNextScreen(choiceId)
+{
+    const gameScene = await getNextGameScene(choiceId)
+    const text = gameScene.Text
+    const options = JSON.parse(gameScene.Options)
+    taskToken = gameScene.TaskToken
+    gameId = gameScene.GameId
+    
+    loadText(text)
+    loadOptions(options)
+}
+
+async function getNextGameScene(choiceId)
+{
+    const gameSceneRequest = {username: username, gameId: gameId, taskToken: taskToken, choice: choiceId}
+    const input = JSON.stringify(gameSceneRequest)
+    const cmd = new InvokeCommand({FunctionName: "GameEngineProxy", Payload: input})
     const response = await lambdaClient.send(cmd)
     const payload = asciiDecoder.decode(response.Payload)
     const gameScene = JSON.parse(payload)
-    const text = gameScene.Text
-    const options = JSON.parse(gameScene.Options)
 
-    loadText(text)
-    loadOptions(options)
+    return gameScene
 }
 
 function clearOptions()
@@ -58,12 +88,6 @@ function loadOptions(options) {
     })
 }
 
-function showOption(option){
-    return true
+function selectOption(choice) {
+    loadNextScreen(choice)
 }
-
-function selectOption(option) {
-
-}
-
-startGame()
